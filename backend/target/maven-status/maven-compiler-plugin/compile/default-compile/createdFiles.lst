@@ -1,0 +1,4 @@
+com\chatpdf\backend\Service\DocumentService.class
+com\chatpdf\backend\Controller\ChatController.class
+com\chatpdf\backend\BackendApplication.class
+com\chatpdf\backend\Controller\FileController.class
