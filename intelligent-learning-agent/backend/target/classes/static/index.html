@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能学习资料分析与答疑Agent</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root { --primary: #409eff; --bg: #f5f7fa; --card: #fff; --text: #333; --border: #e4e7ed; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 15px; background: var(--card); border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .card { background: var(--card); border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: calc(100vh - 140px); }
+        .upload-area { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; margin-bottom: 15px; }
+        .upload-area:hover { border-color: var(--primary); background: #ecf5ff; }
+        .file-list { flex: 1; overflow-y: auto; margin-top: 10px; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--bg); border-radius: 6px; margin-bottom: 6px; font-size: 14px; }
+        .file-item a { color: var(--primary); text-decoration: none; }
+        .chat-box { flex: 1; overflow-y: auto; padding: 10px; background: var(--bg); border-radius: 8px; margin-bottom: 15px; }
+        .msg { margin-bottom: 12px; display: flex; gap: 10px; }
+        .msg.user { flex-direction: row-reverse; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); word-break: break-word; }
+        .msg.user .bubble { background: var(--primary); color: #fff; }
+        .input-area { display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; }
+        button { padding: 10px 20px; background: var(--primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .bubble p { margin: 0.5em 0; }
+        .bubble pre { background: #f4f4f4; padding: 10px; border-radius: 6px; overflow-x: auto; }
+        .msg.user .bubble pre { background: rgba(255,255,255,0.2); }
+        /* 修复 Markdown 样式 */
+        .bubble ul, .bubble ol { padding-left: 20px; margin: 0.5em 0; }
+        .bubble code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .msg.user .bubble code { background: rgba(255,255,255,0.2); }
+
+        /* ✅ Agent 功能说明区域 */
+        .agent-features {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+        .feature-tag {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+
+        /* ✅ 会话控制区域样式 */
+        .session-control {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 6px;
+            align-items: center;
+        }
+        .session-control label {
+            font-weight: bold;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .session-control input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+        .session-control button {
+            padding: 8px 15px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .history-btn {
+            background: #67c23a !important;
+        }
+        .clear-btn {
+            background: #f56c6c !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header><h1>🎓 智能学习资料分析与答疑Agent</h1></header>
+    <div class="grid">
+        <div class="card">
+            <h3> 📚 学习资料管理</h3>
+            <div id="uploadArea" class="upload-area">
+                <input type="file" id="fileInput" accept=".pdf" style="display:none">
+                <p>点击或拖拽上传教材/课件/笔记 PDF</p>
+            </div>
+            <div id="fileList" class="file-list"></div>
+        </div>
+        <div class="card">
+            <!-- ✅ Agent 功能说明 -->
+            <div class="agent-features">
+                <span class="feature-tag">🧠 意图识别</span>
+                <span class="feature-tag">📖 知识点提取</span>
+                <span class="feature-tag">📝 智能总结</span>
+                <span class="feature-tag">❓ 智能答疑</span>
+                <span class="feature-tag">📊 对比分析</span>
+                <span class="feature-tag">📅 学习助手</span>
+            </div>
+
+            <!-- ✅ 会话控制区域 -->
+            <div class="session-control">
+                <label>💬 会话ID:</label>
+                <input type="text" id="sessionId" placeholder="输入或自动生成" value="">
+                <button onclick="generateSessionId()">🔄 生成</button>
+                <button class="history-btn" onclick="loadHistory()">📜 查看历史</button>
+                <button class="clear-btn" onclick="clearChat()">🗑️ 清空</button>
+            </div>
+
+            <div id="chatBox" class="chat-box">
+                <div class="msg ai"><div class="avatar">李豪</div><div class="bubble">你好！我是你的学习助手李豪 📚<br><br>我可以帮你：<br>• 📖 提取教材重点和知识点<br>• 📝 生成复习提纲和总结<br>• ❓ 解答学习中的疑问<br>• 📊 对比不同资料的观点<br>• 📅 查询日期和时间<br><br>请上传教材、课件或笔记，我们开始学习吧！</div></div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="chatInput" placeholder="输入问题（如：总结本章重点、解释XXX概念、今天几号）..." onkeydown="if(event.key==='Enter') sendChat()">
+                <button id="sendBtn" onclick="sendChat()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    marked.setOptions({ breaks: true, gfm: true });
+
+    // ✅ 初始化会话ID
+    let currentSessionId = localStorage.getItem('currentSessionId') || 'session-' + Date.now();
+    document.getElementById('sessionId').value = currentSessionId;
+
+    // 1. 上传文件
+    async function uploadFile(file) {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/api/files/upload', { method: 'POST', body: formData });
+            const text = await res.text();
+            alert(res.ok ? '✅ ' + text : '❌ ' + text);
+            if (res.ok) loadFiles();
+        } catch (e) { alert('上传失败: ' + e.message); }
+    }
+
+    // 2. 加载文件列表
+    async function loadFiles() {
+        try {
+            const res = await fetch('/api/files/list');
+            const files = await res.json();
+            document.getElementById('fileList').innerHTML = files.map(f => `
+                <div class="file-item"><span>📄 ${f}</span><a href="/api/files/download/${f}" target="_blank">下载</a></div>
+            `).join('');
+        } catch (e) { console.error(e); }
+    }
+
+    // ✅ 生成新的会话ID
+    function generateSessionId() {
+        currentSessionId = 'session-' + Date.now();
+        document.getElementById('sessionId').value = currentSessionId;
+        localStorage.setItem('currentSessionId', currentSessionId);
+        clearChat();
+        alert('✅ 已生成新会话ID: ' + currentSessionId);
+    }
+
+    // ✅ 加载历史会话
+    async function loadHistory() {
+        const sessionId = document.getElementById('sessionId').value.trim();
+        if (!sessionId) {
+            alert('⚠️ 请先输入会话ID');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/session/${sessionId}`);
+            const data = await res.json();
+
+            if (data.success && data.data) {
+                clearChat();
+                const messages = data.data.messages;
+
+                messages.forEach(msg => {
+                    appendMsg(msg.role === 'user' ? 'user' : 'ai', msg.content);
+                });
+
+                alert(`✅ 已加载 ${messages.length} 条历史记录`);
+            } else {
+                alert('❌ 该会话没有历史记录');
+            }
+        } catch (e) {
+            alert('❌ 加载失败: ' + e.message);
+        }
+    }
+
+    // ✅ 清空当前聊天界面
+    function clearChat() {
+        const chatBox = document.getElementById('chatBox');
+        chatBox.innerHTML = '<div class="msg ai"><div class="avatar">李豪</div><div class="bubble">你好！我是你的学习助手李豪 📚<br><br>我可以帮你：<br>• 📖 提取教材重点和知识点<br>• 📝 生成复习提纲和总结<br>• ❓ 解答学习中的疑问<br>• 📊 对比不同资料的观点<br>• 📅 查询日期和时间<br><br>请上传教材、课件或笔记，我们开始学习吧！</div></div>';
+    }
+
+    // 3. 流式对话 (SSE) - 修复版：增强字符解码和流解析
+    async function sendChat() {
+        const input = document.getElementById('chatInput');
+        const btn = document.getElementById('sendBtn');
+        const msg = input.value.trim();
+        if (!msg || btn.disabled) return;
+
+        // ✅ 获取当前会话ID
+        const sessionId = document.getElementById('sessionId').value.trim() || currentSessionId;
+
+        appendMsg('user', msg);
+        input.value = '';
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading"></span>';
+
+        const aiBubble = appendMsg('ai', '<span class="loading"></span> 思考中...');
+
+        try {
+            const res = await fetch('/api/chat/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: msg,
+                    sessionId: sessionId  // ✅ 传入会话ID
+                })
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullText = '';
+            let renderTimer;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // 1. 解码并追加 buffer
+                buffer += decoder.decode(value, { stream: true });
+
+                // 2. 按行分割
+                const lines = buffer.split('\n');
+
+                // 3. 处理完整行，最后一行保留在 buffer
+                for (let i = 0; i < lines.length - 1; i++) {
+                    const line = lines[i];
+                    if (line.startsWith('data:')) {
+                        // 提取 "data: " 后的内容 (长度 6)
+                        let token = line.substring(5).trim();
+                        // 处理 data: 后面紧跟空格的情况
+                        if (line.startsWith('data: ')) {
+                            token = line.substring(6);
+                        }
+
+                        if (token) {
+                            fullText += token;
+
+                            // 4. 防抖渲染，避免频繁 DOM 操作导致卡顿
+                            clearTimeout(renderTimer);
+                            renderTimer = setTimeout(() => {
+                                aiBubble.innerHTML = marked.parse(fullText);
+                                const chatBox = document.getElementById('chatBox');
+                                chatBox.scrollTop = chatBox.scrollHeight;
+                            }, 30); // 30ms 刷新一次 UI
+                        }
+                    }
+                }
+                buffer = lines[lines.length - 1];
+            }
+
+            // 处理流结束时可能残留的最后一行
+            if (buffer.startsWith('data:')) {
+                let token = buffer.substring(6).trim();
+                if (token) {
+                    fullText += token;
+                    aiBubble.innerHTML = marked.parse(fullText);
+                }
+            }
+
+            // 最后一次强制滚动
+            const chatBox = document.getElementById('chatBox');
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (e) {
+            aiBubble.innerHTML = '❌ 请求失败: ' + e.message;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '发送';
+        }
+    }
+
+    function appendMsg(role, content) {
+        const box = document.getElementById('chatBox');
+        const div = document.createElement('div');
+        div.className = `msg ${role}`;
+        div.innerHTML = `<div class="avatar">${role === 'user' ? '👤' : '李豪'}</div><div class="bubble">${content}</div>`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+        return div.querySelector('.bubble');
+    }
+
+    // 拖拽与点击上传
+    const area = document.getElementById('uploadArea');
+    area.addEventListener('click', () => document.getElementById('fileInput').click());
+    area.addEventListener('dragover', e => { e.preventDefault(); area.style.borderColor = '#409eff'; });
+    area.addEventListener('dragleave', () => area.style.borderColor = '#e4e7ed');
+    area.addEventListener('drop', e => {
+        e.preventDefault();
+        area.style.borderColor = '#e4e7ed';
+        if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+    });
+    document.getElementById('fileInput').addEventListener('change', e => uploadFile(e.target.files[0]));
+
+    loadFiles();
+</script>
+</body>
+</html>
