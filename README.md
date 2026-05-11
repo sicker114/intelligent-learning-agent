@@ -110,23 +110,23 @@ mvn spring-boot:run
 - `DELETE /clear` - 清空所有会话
 
 ## 🏗️ 项目结构
-src/main/java/com/backend/ 
-├── Config/ 
-│ └── RedisConfig.java # Redis配置 
-├── Controller/ 
-│ ├── ChatController.java # 聊天接口 
-│ ├── FileController.java # 文件管理接口 
-│ └── SessionController.java # 会话管理接口 
-├── Service/ 
-│ ├── AgentOrchestratorService.java # Agent协调器 
-│ ├── DocumentService.java # 文档处理服务 
-│ ├── IntentRecognitionService.java # 意图识别服务 
-│ ├── SessionHistoryService.java # 会话历史服务 
-│ ├── ToolService.java # 工具服务 
-│ ├── ChatMessage.java # 聊天消息实体 
-│ └── ChatSession.java # 会话实体 
-├── Utils/ 
-└── BackendApplication.java # 应用入口
+- src/main/java/com/backend/ 
+- ├── Config/ 
+- │ └── RedisConfig.java # Redis配置 
+- ├── Controller/ 
+- │ ├── ChatController.java # 聊天接口 
+- │ ├── FileController.java # 文件管理接口 
+- │ └── SessionController.java # 会话管理接口 
+- ├── Service/ 
+- │ ├── AgentOrchestratorService.java # Agent协调器 
+- │ ├── DocumentService.java # 文档处理服务 
+- │ ├── IntentRecognitionService.java # 意图识别服务 
+- │ ├── SessionHistoryService.java # 会话历史服务 
+- │ ├── ToolService.java # 工具服务 
+- │ ├── ChatMessage.java # 聊天消息实体 
+- │ └── ChatSession.java # 会话实体 
+- ├── Utils/ 
+- └── BackendApplication.java # 应用入口
 
 ## 🧪 测试
 
