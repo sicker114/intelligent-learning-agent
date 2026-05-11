@@ -131,9 +131,9 @@ mvn spring-boot:run
 ## 🧪 测试
 
 运行单元测试：
-bash 
-mvn test
-运行截图参考：iamges
+- bash 
+- mvn test
+- 运行截图参考：iamges
 ## 🤝 贡献指南
 
 欢迎提交Issue和Pull Request来改进本项目。
